@@ -1,0 +1,291 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Every "enum" below is a plain String column, validated at the route
+// layer with zod (see server/src/lib/enums.js for the canonical value
+// lists) rather than a native Prisma enum. This was originally because
+// SQLite has no native enum support; kept for the Postgres models too so
+// the whole schema stays one consistent convention instead of a mix.
+//
+// Role: OWNER | SALES | EDITOR | FINANCE
+// ContactSource: WEBSITE | INSTAGRAM | WHATSAPP | FACEBOOK | MANUAL
+// QuoteStatus: DRAFT | SENT | VIEWED | ACCEPTED | CONVERTED | EXPIRED
+// SendChannel: EMAIL | WHATSAPP
+// BookingStatus: PENDING | CONFIRMED | CANCELLED
+// MeetingProvider: ZOOM | TEAMS | WEBEX
+// EventStatus: DRAFT | PUBLISHED | CANCELLED
+// TicketStatus: ISSUED | CHECKED_IN | CANCELLED
+// PaymentProvider: RAZORPAY
+// PaymentStatus: CREATED | CAPTURED | FAILED | REFUNDED
+// GeoMode: ALLOW | BLOCK
+// GeoScope: GLOBAL | EVENT
+// EventSeatStatus: AVAILABLE | BOOKED | BLOCKED (HELD is Redis-only, never
+//   persisted — see server/src/lib/seatHold.js)
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String
+  createdAt    DateTime @default(now())
+}
+
+model Client {
+  id        Int      @id @default(autoincrement())
+  name      String
+  contact   String
+  company   String?
+  notes     String?
+  source    String   @default("WEBSITE")
+  createdAt DateTime @default(now())
+
+  bookings Booking[]
+  quotes   Quote[]
+  tickets  Ticket[]
+}
+
+model Service {
+  id          Int     @id @default(autoincrement())
+  key         String  @unique
+  label       String
+  spec        String?
+  description String?
+  basePrice   Float   @default(0)
+  unit        String  @default("flat")
+  active      Boolean @default(true)
+
+  quoteLineItems QuoteLineItem[]
+  bookings       Booking[]
+}
+
+model Quote {
+  id              Int       @id @default(autoincrement())
+  clientId        Int
+  client          Client    @relation(fields: [clientId], references: [id])
+  status          String    @default("DRAFT")
+  subtotal        Float     @default(0)
+  total           Float     @default(0)
+  note            String?
+  pdfPath         String?
+  sentVia         String?
+  sentAt          DateTime?
+  viewedAt        DateTime?
+  acceptedAt      DateTime?
+  createdByUserId Int?
+  createdAt       DateTime  @default(now())
+
+  lineItems QuoteLineItem[]
+}
+
+model QuoteLineItem {
+  id        Int      @id @default(autoincrement())
+  quoteId   Int
+  quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  serviceId Int?
+  service   Service? @relation(fields: [serviceId], references: [id])
+  label     String
+  qty       Float    @default(1)
+  unitPrice Float    @default(0)
+  lineTotal Float    @default(0)
+}
+
+model Booking {
+  id                 Int       @id @default(autoincrement())
+  clientId           Int?
+  client              Client?  @relation(fields: [clientId], references: [id])
+  serviceId          Int?
+  service             Service? @relation(fields: [serviceId], references: [id])
+  date               DateTime
+  status             String    @default("PENDING")
+  source             String    @default("WEBSITE")
+  isBlocked          Boolean   @default(false)
+  notes              String?
+  meetingProvider    String?
+  meetingJoinUrl     String?
+  meetingId          String?
+  calendarSyncStatus String?
+  createdByUserId    Int?
+  createdAt          DateTime  @default(now())
+}
+
+model Event {
+  id             Int      @id @default(autoincrement())
+  slug           String   @unique
+  title          String
+  description    String?
+  coverImagePath String?
+  start          DateTime
+  end            DateTime
+  venue          String?
+  capacity       Int?
+  status         String   @default("DRAFT")
+  geoRestricted  Boolean  @default(false)
+  livestreamUrl  String?
+  createdAt      DateTime @default(now())
+
+  // Assigned seating is opt-in per event, layered on top of the existing
+  // tier/quantity model above rather than replacing it — `venue` (free
+  // text, display only) is unrelated and untouched; `seatingVenue` is the
+  // structured layout an event can be attached to.
+  seatingMode    Boolean  @default(false)
+  seatingVenueId Int?
+  seatingVenue   Venue?   @relation(fields: [seatingVenueId], references: [id])
+
+  ticketTiers TicketTier[]
+  tickets     Ticket[]
+  geoRules    GeoRule[]
+  eventSeats  EventSeat[]
+}
+
+model TicketTier {
+  id            Int    @id @default(autoincrement())
+  eventId       Int
+  event         Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name          String
+  price         Float
+  quantityTotal Int
+  quantitySold  Int    @default(0)
+
+  tickets Ticket[]
+}
+
+model Ticket {
+  id            Int         @id @default(autoincrement())
+  eventId       Int
+  event         Event       @relation(fields: [eventId], references: [id])
+  // Exactly one of ticketTierId (general admission) / eventSeatId (assigned
+  // seating) is set, never both — which one tells you which flow issued it.
+  ticketTierId  Int?
+  ticketTier    TicketTier? @relation(fields: [ticketTierId], references: [id])
+  eventSeatId   Int?        @unique
+  eventSeat     EventSeat?  @relation(fields: [eventSeatId], references: [id])
+  buyerClientId Int?
+  buyerClient   Client?     @relation(fields: [buyerClientId], references: [id])
+  qrToken       String      @unique
+  status        String      @default("ISSUED")
+  checkedInAt   DateTime?
+  // Not @unique: a seat-based order pays once but issues one Ticket per
+  // seat, so several tickets can share a Payment. General-admission still
+  // creates exactly one Ticket per Payment in practice, just no longer DB-enforced.
+  paymentId     Int?
+  payment       Payment?    @relation(fields: [paymentId], references: [id])
+  createdAt     DateTime    @default(now())
+}
+
+model Payment {
+  id                Int      @id @default(autoincrement())
+  provider          String   @default("RAZORPAY")
+  providerOrderId   String
+  providerPaymentId String?
+  amount            Float
+  currency          String   @default("INR")
+  status            String   @default("CREATED")
+  rawPayload        String?
+  createdAt         DateTime @default(now())
+
+  tickets Ticket[]
+}
+
+model WorkItem {
+  id            Int      @id @default(autoincrement())
+  title         String
+  client        String
+  tag           String
+  durationLabel String
+  hue           Int      @default(200)
+  videoPath     String?
+  thumbnailPath String?
+  published     Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+}
+
+// Singleton row (id always 1) holding studio-wide operational settings.
+model StudioConfig {
+  id                        Int      @id @default(1)
+  maxBookingsPerDay         Int      @default(1)
+  googleCalendarRefreshToken String?
+  googleCalendarEmail       String?
+  updatedAt                 DateTime @updatedAt
+}
+
+model GeoRule {
+  id                Int      @id @default(autoincrement())
+  mode              String
+  countryCode       String
+  scope             String   @default("GLOBAL")
+  ruleTargetEventId Int?
+  ruleTargetEvent   Event?   @relation(fields: [ruleTargetEventId], references: [id])
+  createdAt         DateTime @default(now())
+}
+
+// --- Assigned seating (venue layouts) ---
+//
+// A Venue's Seats are a static physical layout, authored once in the admin
+// Venue Layout editor and reused across every event held there. EventSeat
+// is the per-event inventory row (same seat, different show — an event
+// tracks its own AVAILABLE/BOOKED/BLOCKED per seat, and can even carry a
+// different price than another event at the same venue). This mirrors the
+// venue/zone/seat + event_seats split from the original seat-booking-system
+// demo, translated into Prisma/Postgres models.
+
+model Venue {
+  id        Int        @id @default(autoincrement())
+  name      String
+  city      String?
+  createdAt DateTime   @default(now())
+
+  zones  SeatZone[]
+  seats  Seat[]
+  events Event[]
+}
+
+model SeatZone {
+  id        Int    @id @default(autoincrement())
+  venueId   Int
+  venue     Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  name      String
+  colorHex  String
+  basePrice Float  @default(0)
+  sortOrder Int    @default(0)
+
+  seats Seat[]
+}
+
+model Seat {
+  id         Int      @id @default(autoincrement())
+  venueId    Int
+  venue      Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  zoneId     Int
+  zone       SeatZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  rowLabel   String
+  seatNumber Int
+  posX       Float
+  posY       Float
+
+  eventSeats EventSeat[]
+
+  @@unique([venueId, rowLabel, seatNumber])
+}
+
+model EventSeat {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  seatId    Int
+  seat      Seat     @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  price     Float
+  status    String   @default("AVAILABLE") // AVAILABLE | BOOKED | BLOCKED
+  updatedAt DateTime @updatedAt
+
+  ticket Ticket?
+
+  @@unique([eventId, seatId])
+}

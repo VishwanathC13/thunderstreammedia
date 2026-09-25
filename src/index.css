@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+/* ---- Theme tokens (consumed via the T object in src/shared.jsx) ---- */
+:root, :root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0C0C0E;
+  --surface: #161519;
+  --surface-alt: #1F1E23;
+  --text: #F5F2EC;
+  --muted: #8C8992;
+  --line: #2A282E;
+  --stream: #F0362A;
+  --ember: #E5622D;
+  --daylight: #6FA8D6;
+  --wash: rgba(255,255,255,.05);
+  --wash-strong: rgba(255,255,255,.09);
+  --scrim: rgba(0,0,0,.75);
+  --shadow-lg: 0 30px 80px rgba(0,0,0,.5);
+  --grain-opacity: .16;
+  --shine: rgba(255,255,255,.55);
+  --nav-solid: rgba(12,12,14,.82);
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #F6F3EC;
+  --surface: #FFFFFF;
+  --surface-alt: #EFEBE2;
+  --text: #17161B;
+  --muted: #6A6773;
+  --line: #E0DBD0;
+  --stream: #E22F23;
+  --ember: #D4501C;
+  --daylight: #2E78B0;
+  --wash: rgba(23,22,27,.05);
+  --wash-strong: rgba(23,22,27,.09);
+  --scrim: rgba(23,22,27,.5);
+  --shadow-lg: 0 24px 60px rgba(23,22,27,.16);
+  --grain-opacity: .07;
+  --shine: rgba(23,22,27,.4);
+  --nav-solid: rgba(246,243,236,.85);
+}
+
+/* Content that sits on photos/video keeps the dark palette in both themes. */
+.media-dark {
+  --bg: #0C0C0E;
+  --surface: #161519;
+  --surface-alt: #1F1E23;
+  --text: #F5F2EC;
+  --muted: #8C8992;
+  --line: #2A282E;
+  --daylight: #6FA8D6;
+  --wash: rgba(255,255,255,.05);
+  --wash-strong: rgba(255,255,255,.09);
+  color: var(--text);
+}
+
+body { background: var(--bg); color: var(--text); }
+
+/* Wordmark: white-lettered PNG on dark, dark-lettered PNG on light. */
+.logo-on-light { display: none; }
+:root[data-theme='light'] .logo-on-dark { display: none; }
+:root[data-theme='light'] .logo-on-light { display: block; }
+.logo-on-dark { display: block; }

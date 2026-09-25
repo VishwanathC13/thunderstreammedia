@@ -1,0 +1,7 @@
+-- CreateTable
+CREATE TABLE "StudioConfig" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT DEFAULT 1,
+    "maxBookingsPerDay" INTEGER NOT NULL DEFAULT 1,
+    "updatedAt" DATETIME NOT NULL
+);
+
