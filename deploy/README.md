@@ -109,11 +109,23 @@ After editing `.env`, apply it with `pm2 restart thunderstream-api` (as `tsm`).
 
 ## Updating the site later
 
-**Without GitHub (what this project uses today):** from the project folder on
-your laptop run `./deploy/push-to-server.sh`. It uploads your code and deploys
-it in about a minute. Nothing else to do.
+**Via GitHub (the normal path now):** on your laptop, build and test the
+change, then `git add -A && git commit -m "..."` and `git push`. Then, on the
+server, as `tsm`:
 
-**With GitHub:** on your laptop build and test the change, commit, `git push`. Then on the server:
+```bash
+cd /srv/thunderstream && ./deploy/deploy.sh
+```
+
+The server has its own read-only SSH deploy key for the GitHub repo (added
+under repo Settings → Deploy keys), so `git pull` there needs no password or
+token. `deploy.sh` pulls, backs up the database, applies any new migrations,
+rebuilds the site, and restarts the API.
+
+**Without GitHub (fallback):** `./deploy/push-to-server.sh` from the project
+folder on your laptop uploads the working tree directly and deploys it,
+skipping git entirely. Useful if GitHub is unreachable or for a quick
+throwaway test you don't want in history.
 
 ```bash
 ssh tsm@YOUR_SERVER_IP        # or: ssh root@... then su - tsm
