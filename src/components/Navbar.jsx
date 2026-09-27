@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Radio } from 'lucide-react';
-import { T, Logo } from '../shared';
+import { T, Logo, SHOW_TICKETED_EVENTS } from '../shared';
 import { apiGet } from '../lib/api';
 import ThemeToggle from './ThemeToggle';
+
+const NAV_LINKS = ['Work', 'Services', 'Booking', ...(SHOW_TICKETED_EVENTS ? ['Events'] : [])];
 
 export default function Navbar({ solid, onRequestQuote }) {
   const [liveEvent, setLiveEvent] = useState(null);
 
   useEffect(() => {
+    if (!SHOW_TICKETED_EVENTS) return undefined;
     const checkLive = () => {
       apiGet('/api/events/live', { auth: false })
         .then((data) => setLiveEvent(data.live ? data.event : null))
@@ -30,7 +33,7 @@ export default function Navbar({ solid, onRequestQuote }) {
     >
       <Logo />
       <div className="hidden md:flex items-center gap-9 text-sm" style={{ color: T.muted }}>
-        {['Work', 'Services', 'Booking', 'Events'].map((x) => (
+        {NAV_LINKS.map((x) => (
           <a key={x} href={`#${x.toLowerCase()}`} className="relative hover:text-[color:var(--text)] transition-colors group">
             {x}
             <span className="absolute -bottom-1 left-0 w-0 h-px group-hover:w-full transition-all duration-300" style={{ background: T.stream }} />

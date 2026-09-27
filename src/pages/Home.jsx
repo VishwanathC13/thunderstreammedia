@@ -11,7 +11,7 @@ import BookingCalendar from '../components/BookingCalendar';
 import Footer from '../components/Footer';
 import QuoteModal from '../components/QuoteModal';
 import { apiGet, apiPost } from '../lib/api';
-import { FONT_IMPORT, T, FILTERS, useReveal, Grain, Aperture, Eyebrow } from '../shared';
+import { FONT_IMPORT, T, FILTERS, useReveal, Grain, Aperture, Eyebrow, SHOW_TICKETED_EVENTS } from '../shared';
 
 export default function Home() {
   const [iris, setIris] = useState(false);
@@ -205,6 +205,7 @@ export default function Home() {
       </section>
 
       {/* EVENTS */}
+      {SHOW_TICKETED_EVENTS && (
       <section id="events" className="px-5 md:px-10 py-24 md:py-32" style={{ borderTop: `1px solid ${T.line}` }}>
         <div className="reveal">
           <Eyebrow>Ticketed events</Eyebrow>
@@ -261,6 +262,7 @@ export default function Home() {
             })}
         </div>
       </section>
+      )}
 
       {/* CTA */}
       <section className="px-5 md:px-10 py-28 text-center relative overflow-hidden reveal" style={{ borderTop: `1px solid ${T.line}` }}>

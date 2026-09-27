@@ -43,6 +43,12 @@ export const FONT_IMPORT = `
 // Because they're `var(...)` strings, don't append hex alpha (`T.stream + '33'`)
 // or pass them to libraries that need a literal color — use BRAND_HEX for that,
 // or color-mix() for tints.
+// Temporarily hidden on the public site at the user's request (2026-09-27).
+// Flip back to true to bring back the homepage Events section and the
+// "Events" nav link (Navbar.jsx) — ticketed events still work fully in the
+// admin either way, this only affects public visibility.
+export const SHOW_TICKETED_EVENTS = false;
+
 export const T = {
   bg: 'var(--bg)',
   surface: 'var(--surface)',
