@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const prisma = require('../../prismaClient');
 const { requireAuth, requireRole, JWT_SECRET } = require('../../middleware/auth');
-const { listCalendarEvents } = require('../../integrations/calendarSync');
+const { listCalendarEvents, clearAccessTokenCache } = require('../../integrations/calendarSync');
 
 const router = express.Router();
 
@@ -91,6 +91,7 @@ router.get('/callback', async (req, res) => {
       update: { googleCalendarRefreshToken: tokenData.refresh_token, googleCalendarEmail: payload.email },
       create: { id: 1, googleCalendarRefreshToken: tokenData.refresh_token, googleCalendarEmail: payload.email },
     });
+    clearAccessTokenCache();
 
     res.redirect(`${FRONTEND_URL}/admin/settings?calendar=connected`);
   } catch (err) {
@@ -126,6 +127,7 @@ router.post('/disconnect', requireAuth, requireRole('OWNER'), async (req, res) =
     where: { id: 1 },
     data: { googleCalendarRefreshToken: null, googleCalendarEmail: null },
   });
+  clearAccessTokenCache();
   res.json({ ok: true });
 });
 

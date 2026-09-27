@@ -16,7 +16,17 @@ function isGoogleCalendarConfigured() {
   return Boolean(process.env.GOOGLE_OAUTH_CLIENT_ID && process.env.GOOGLE_OAUTH_CLIENT_SECRET);
 }
 
+// Google access tokens are typically valid ~1hr, but every calendar read
+// (opening the admin Bookings & Calendar page, paging month/week/day) was
+// exchanging the refresh token for a brand new one first — two sequential
+// round trips to Google before any data could load, adding ~1.4s to every
+// view. Cached in memory (single Node process, one studio) and refreshed
+// only once actually near expiry, with a minute of buffer for clock drift.
+let cachedToken = null; // { accessToken, expiresAt }
+
 async function getAccessToken(refreshToken) {
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) return cachedToken.accessToken;
+
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -29,7 +39,8 @@ async function getAccessToken(refreshToken) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error_description || 'Google token refresh failed');
-  return data.access_token;
+  cachedToken = { accessToken: data.access_token, expiresAt: Date.now() + (data.expires_in || 3600) * 1000 };
+  return cachedToken.accessToken;
 }
 
 async function syncBookingToCalendar({ booking }) {
@@ -93,4 +104,10 @@ async function listCalendarEvents({ timeMin, timeMax }) {
   return { connected: true, events };
 }
 
-module.exports = { syncBookingToCalendar, listCalendarEvents, isGoogleCalendarConfigured };
+// Called on disconnect/reconnect (see routes/admin/googleCalendar.js) so a
+// cached token for the old refresh token is never reused against a new one.
+function clearAccessTokenCache() {
+  cachedToken = null;
+}
+
+module.exports = { syncBookingToCalendar, listCalendarEvents, isGoogleCalendarConfigured, clearAccessTokenCache };
