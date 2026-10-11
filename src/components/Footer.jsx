@@ -15,7 +15,7 @@ export default function Footer() {
         <div className="flex gap-12 text-sm" style={{ color: T.muted }}>
           <div className="flex flex-col gap-2.5">
             <span style={{ color: T.text }}>Contact</span>
-            <a href="mailto:hello@thunderstreammedia.com" className="hover:text-[color:var(--text)] transition-colors">hello@thunderstreammedia.com</a>
+            <a href="https://thunderstreammedia.com" className="hover:text-[color:var(--text)] transition-colors">thunderstreammedia.com</a>
             <a href="tel:+918884010884" className="hover:text-[color:var(--text)] transition-colors">+91 88840 10884</a>
           </div>
           <div className="flex flex-col gap-2.5">
