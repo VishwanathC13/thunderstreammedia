@@ -7,6 +7,7 @@ import Marquee from '../components/Marquee';
 import Stats from '../components/Stats';
 import Services from '../components/Services';
 import Work from '../components/Work';
+import Gallery from '../components/Gallery';
 import BookingCalendar from '../components/BookingCalendar';
 import Footer from '../components/Footer';
 import QuoteModal from '../components/QuoteModal';
@@ -167,6 +168,8 @@ export default function Home() {
         </div>
         <Work filter={filter} />
       </section>
+
+      <Gallery />
 
       {/* BOOKING */}
       <section id="booking" className="px-5 md:px-10 py-24 md:py-32 relative" style={{ borderTop: `1px solid ${T.line}` }}>

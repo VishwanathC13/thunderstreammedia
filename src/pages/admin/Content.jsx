@@ -11,10 +11,16 @@ export default function Content() {
   const [form, setForm] = useState({ title: '', client: '', tag: 'video', durationLabel: '', hue: 200, videoPath: '', youtubeUrl: '', thumbnailPath: '' });
   const [uploading, setUploading] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
+  const [gallery, setGallery] = useState([]);
+  const [galleryForm, setGalleryForm] = useState({ title: '', caption: '', imagePath: '', sortOrder: 0 });
+  const [uploadingGallery, setUploadingGallery] = useState(false);
   const [error, setError] = useState('');
 
   const load = () => { apiGet('/api/admin/work').then(setItems).catch((err) => console.error(err)); };
   useEffect(load, []);
+
+  const loadGallery = () => { apiGet('/api/admin/gallery').then(setGallery).catch((err) => console.error(err)); };
+  useEffect(loadGallery, []);
 
   // Uploads one file and returns the stored filename.
   const uploadToServer = async (file) => {
@@ -67,6 +73,41 @@ export default function Content() {
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  const uploadGalleryImage = async (file) => {
+    setUploadingGallery(true);
+    setError('');
+    try {
+      const path = await uploadToServer(file);
+      setGalleryForm((form) => ({ ...form, imagePath: path }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const submitGallery = async (e) => {
+    e.preventDefault();
+    setError('');
+    try {
+      await apiPost('/api/admin/gallery', { ...galleryForm, sortOrder: Number(galleryForm.sortOrder) });
+      setGalleryForm({ title: '', caption: '', imagePath: '', sortOrder: 0 });
+      loadGallery();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const toggleGalleryPublished = async (image) => {
+    await apiPatch(`/api/admin/gallery/${image.id}`, { published: !image.published });
+    loadGallery();
+  };
+
+  const removeGallery = async (id) => {
+    await apiDelete(`/api/admin/gallery/${id}`);
+    loadGallery();
   };
 
   const submit = async (e) => {
@@ -165,6 +206,40 @@ export default function Content() {
           </div>
         ))}
       </div>
+
+      <section className="mt-14 pt-10" style={{ borderTop: `1px solid ${T.line}` }}>
+        <div className="mb-6">
+          <div className="text-xs tracking-[.2em] uppercase mb-2" style={{ color: T.muted, fontFamily: "'JetBrains Mono', monospace" }}>Photography</div>
+          <h2 style={{ fontFamily: "'Fraunces', serif" }} className="text-2xl">Gallery slideshow</h2>
+        </div>
+        <form onSubmit={submitGallery} className="mb-6 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-4 gap-3" style={{ background: T.surface, border: `1px solid ${T.line}` }}>
+          <input required placeholder="Photo title" value={galleryForm.title} onChange={(e) => setGalleryForm({ ...galleryForm, title: e.target.value })}
+            className="px-3 py-2.5 rounded-xl text-sm outline-none" style={{ background: T.surfaceAlt, border: `1px solid ${T.line}`, color: T.text }} />
+          <input placeholder="Caption (optional)" value={galleryForm.caption} onChange={(e) => setGalleryForm({ ...galleryForm, caption: e.target.value })}
+            className="px-3 py-2.5 rounded-xl text-sm outline-none md:col-span-2" style={{ background: T.surfaceAlt, border: `1px solid ${T.line}`, color: T.text }} />
+          <input type="number" min="0" placeholder="Order" value={galleryForm.sortOrder} onChange={(e) => setGalleryForm({ ...galleryForm, sortOrder: e.target.value })}
+            className="px-3 py-2.5 rounded-xl text-sm outline-none" style={{ background: T.surfaceAlt, border: `1px solid ${T.line}`, color: T.text }} />
+          <label className="px-3 py-2.5 rounded-xl text-sm flex items-center gap-2 cursor-pointer md:col-span-3" style={{ background: T.surfaceAlt, border: `1px solid ${T.line}`, color: T.muted }}>
+            <Upload size={14} />
+            {uploadingGallery ? 'Uploading…' : galleryForm.imagePath ? 'Photo attached' : 'Upload photograph'}
+            <input required={!galleryForm.imagePath} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files[0] && uploadGalleryImage(e.target.files[0])} />
+          </label>
+          <button type="submit" disabled={!galleryForm.imagePath || uploadingGallery} className="px-4 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50" style={{ background: T.stream, color: T.bg }}>Add to gallery</button>
+        </form>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {gallery.map((image) => (
+            <div key={image.id} className="rounded-2xl overflow-hidden" style={{ background: T.surface, border: `1px solid ${T.line}` }}>
+              <div className="aspect-[4/3] media-dark relative"><img src={mediaUrl(image.imageUrl)} alt="" className="absolute inset-0 w-full h-full object-cover" /></div>
+              <div className="p-3"><p className="text-sm truncate">{image.title}</p><div className="flex items-center gap-2 mt-3">
+                <button onClick={() => toggleGalleryPublished(image)} className="text-xs px-2 py-1.5 rounded-full flex items-center gap-1" style={{ background: image.published ? 'rgba(87,192,122,.14)' : 'var(--wash)', color: image.published ? '#57C07A' : T.muted }}>
+                  {image.published ? <Eye size={12} /> : <EyeOff size={12} />} {image.published ? 'Live' : 'Hidden'}
+                </button>
+                <button onClick={() => removeGallery(image.id)} className="text-xs px-2 py-1.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(229,98,45,.14)', color: T.ember }}><Trash2 size={12} /> Delete</button>
+              </div></div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

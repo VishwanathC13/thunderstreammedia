@@ -208,6 +208,16 @@ model WorkItem {
   createdAt     DateTime @default(now())
 }
 
+model GalleryImage {
+  id         Int      @id @default(autoincrement())
+  title      String
+  caption    String?
+  imagePath  String
+  published  Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
 // Singleton row (id always 1) holding studio-wide operational settings.
 model StudioConfig {
   id                        Int      @id @default(1)
