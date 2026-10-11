@@ -29,7 +29,16 @@ export default function Work({ filter }) {
                 background: `linear-gradient(150deg, hsl(${w.hue} 42% 22%), ${T.surface} 70%)`,
                 transition: "transform .7s cubic-bezier(.2,.7,.2,1)",
               }}
-            />
+            >
+              {w.thumbnailUrl && (
+                <img
+                  src={mediaUrl(w.thumbnailUrl)}
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
+            </div>
             <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,.78) 8%, transparent 62%)" }} />
 
             <div className="absolute inset-0 flex items-center justify-center">
@@ -59,7 +68,12 @@ export default function Work({ filter }) {
         ))}
       </div>
       {active && (
-        <VideoPlayer src={mediaUrl(active.videoUrl)} title={active.title} onClose={() => setActive(null)} />
+        <VideoPlayer
+          src={mediaUrl(active.videoUrl)}
+          poster={mediaUrl(active.thumbnailUrl) || undefined}
+          title={active.title}
+          onClose={() => setActive(null)}
+        />
       )}
     </>
   );
