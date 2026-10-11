@@ -24,6 +24,7 @@ const upload = multer({
 
 function getMediaUrl(filename) {
   if (!filename) return null;
+  if (/^https?:\/\//i.test(filename)) return filename;
   return `/media/${filename}`;
 }
 

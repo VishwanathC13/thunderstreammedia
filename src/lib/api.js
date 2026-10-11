@@ -37,6 +37,6 @@ export const apiDelete = (path, opts) => request(path, { ...opts, method: 'DELET
 // The backend returns relative /media/* paths; the frontend and backend
 // run on different origins in dev (5173 vs 4000), so those need the API
 // base URL prefixed before they're usable as an <img>/<video> src.
-export const mediaUrl = (path) => (path ? `${BASE_URL}${path}` : null);
+export const mediaUrl = (path) => (path ? (/^https?:\/\//i.test(path) ? path : `${BASE_URL}${path}`) : null);
 
 export { BASE_URL };

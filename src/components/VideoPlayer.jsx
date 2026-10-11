@@ -38,7 +38,7 @@ function buildQualityOptions(levels) {
 // `inline` embeds the player directly in the page flow (event livestream
 // section); the default lightbox mode is a fixed modal (Work-grid click
 // to play).
-export default function VideoPlayer({ src, poster, title, live = false, inline = false, onClose }) {
+export default function VideoPlayer({ src, poster, youtubeUrl, title, live = false, inline = false, onClose }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const hlsRef = useRef(null);
@@ -190,7 +190,15 @@ export default function VideoPlayer({ src, poster, title, live = false, inline =
           LIVE
         </span>
       )}
-      {streamError ? (
+      {youtubeUrl ? (
+        <iframe
+          src={youtubeUrl}
+          title={title}
+          className="w-full aspect-video block"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      ) : streamError ? (
         <div className="w-full aspect-video flex flex-col items-center justify-center gap-2" style={{ background: '#000', color: T.muted }}>
           <Radio size={22} />
           <p className="text-sm">Stream isn't live yet — check back at showtime.</p>

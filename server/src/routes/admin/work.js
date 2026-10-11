@@ -3,6 +3,7 @@ const { z } = require('zod');
 const prisma = require('../../prismaClient');
 const { requireAuth, requireRole } = require('../../middleware/auth');
 const { getMediaUrl } = require('../../integrations/storage');
+const { getYoutubeEmbedUrl, getYoutubeThumbnailUrl } = require('../../lib/youtube');
 
 const router = express.Router();
 router.use(requireAuth, requireRole('OWNER', 'EDITOR'));
@@ -14,6 +15,10 @@ const workSchema = z.object({
   durationLabel: z.string().min(1),
   hue: z.number().int().min(0).max(360).optional(),
   videoPath: z.string().optional().nullable(),
+  youtubeUrl: z.preprocess(
+    (value) => value === '' ? null : value,
+    z.string().url().nullable().optional().refine((value) => !value || getYoutubeEmbedUrl(value), 'Must be a valid YouTube URL'),
+  ),
   thumbnailPath: z.string().optional().nullable(),
   published: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
@@ -21,7 +26,12 @@ const workSchema = z.object({
 
 router.get('/', async (req, res) => {
   const items = await prisma.workItem.findMany({ orderBy: { sortOrder: 'asc' } });
-  res.json(items.map((w) => ({ ...w, videoUrl: getMediaUrl(w.videoPath), thumbnailUrl: getMediaUrl(w.thumbnailPath) })));
+  res.json(items.map((w) => ({
+    ...w,
+    videoUrl: getMediaUrl(w.videoPath),
+    thumbnailUrl: getMediaUrl(w.thumbnailPath) || getYoutubeThumbnailUrl(w.youtubeUrl),
+    youtubeEmbedUrl: getYoutubeEmbedUrl(w.youtubeUrl),
+  })));
 });
 
 router.post('/', async (req, res) => {

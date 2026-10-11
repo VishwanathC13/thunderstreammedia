@@ -8,7 +8,7 @@ const TAGS = FILTERS.filter((f) => f.key !== 'all');
 export default function Content() {
   const [items, setItems] = useState([]);
   const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState({ title: '', client: '', tag: 'video', durationLabel: '', hue: 200, videoPath: '', thumbnailPath: '' });
+  const [form, setForm] = useState({ title: '', client: '', tag: 'video', durationLabel: '', hue: 200, videoPath: '', youtubeUrl: '', thumbnailPath: '' });
   const [uploading, setUploading] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const [error, setError] = useState('');
@@ -74,7 +74,7 @@ export default function Content() {
     setError('');
     try {
       await apiPost('/api/admin/work', { ...form, hue: Number(form.hue) });
-      setForm({ title: '', client: '', tag: 'video', durationLabel: '', hue: 200, videoPath: '', thumbnailPath: '' });
+      setForm({ title: '', client: '', tag: 'video', durationLabel: '', hue: 200, videoPath: '', youtubeUrl: '', thumbnailPath: '' });
       setFormOpen(false);
       load();
     } catch (err) {
@@ -118,6 +118,8 @@ export default function Content() {
             className="px-3 py-2.5 rounded-xl text-sm outline-none" style={{ background: T.surfaceAlt, border: `1px solid ${T.line}`, color: T.text }} />
           <input type="number" min="0" max="360" placeholder="Hue (0-360)" value={form.hue} onChange={(e) => setForm({ ...form, hue: e.target.value })}
             className="px-3 py-2.5 rounded-xl text-sm outline-none" style={{ background: T.surfaceAlt, border: `1px solid ${T.line}`, color: T.text }} />
+          <input type="url" placeholder="YouTube URL (optional)" value={form.youtubeUrl} onChange={(e) => setForm({ ...form, youtubeUrl: e.target.value })}
+            className="px-3 py-2.5 rounded-xl text-sm outline-none md:col-span-2" style={{ background: T.surfaceAlt, border: `1px solid ${T.line}`, color: T.text }} />
           <label className="px-3 py-2.5 rounded-xl text-sm flex items-center gap-2 cursor-pointer" style={{ background: T.surfaceAlt, border: `1px solid ${T.line}`, color: T.muted }}>
             <Upload size={14} />
             {uploading ? 'Uploading…' : form.videoPath ? 'Video attached' : 'Upload video (optional)'}

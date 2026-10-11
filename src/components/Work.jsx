@@ -19,7 +19,7 @@ export default function Work({ filter }) {
         {filtered.map((w) => (
           <div
             key={w.id}
-            onClick={() => w.videoUrl && setActive(w)}
+            onClick={() => (w.videoUrl || w.youtubeEmbedUrl) && setActive(w)}
             className="workcard media-dark group relative aspect-[4/3] rounded-2xl overflow-hidden cursor-pointer"
             style={{ border: `1px solid ${T.line}` }}
           >
@@ -71,6 +71,7 @@ export default function Work({ filter }) {
         <VideoPlayer
           src={mediaUrl(active.videoUrl)}
           poster={mediaUrl(active.thumbnailUrl) || undefined}
+          youtubeUrl={active.youtubeEmbedUrl}
           title={active.title}
           onClose={() => setActive(null)}
         />

@@ -201,6 +201,7 @@ model WorkItem {
   durationLabel String
   hue           Int      @default(200)
   videoPath     String?
+  youtubeUrl    String?
   thumbnailPath String?
   published     Boolean  @default(true)
   sortOrder     Int      @default(0)
